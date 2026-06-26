@@ -409,14 +409,43 @@ setLoading(false);
                   {msg.role === "user" ? "U" : "AI"}
                 </div>
                 <div
-                  className={`max-w-[85%] p-4 rounded-2xl ${
-                    msg.role === "user"
-                      ? "bg-blue-600 text-white"
-                      : "bg-white shadow-md border"
-                  }`}
-                >
-                  {msg.content}
-                </div>
+  className={`max-w-[85%] p-4 rounded-2xl ${
+    msg.role === "user"
+      ? "bg-blue-600 text-white"
+      : "bg-white shadow-md border"
+  }`}
+>
+
+  <div>{msg.content}</div>
+
+  {msg.role === "assistant" &&
+    msg.sources &&
+    msg.sources.length > 0 && (
+
+      <div className="mt-4 border-t pt-3">
+
+        <p className="text-sm font-semibold mb-2">
+          📄 Sources
+        </p>
+
+        {msg.sources.map((source, index) => (
+
+          <div
+            key={index}
+            className="text-xs bg-gray-100 rounded-lg px-3 py-2 mb-2"
+          >
+            📘 <strong>{source.pdf}</strong>
+            <br />
+            📄 Page {source.page}
+          </div>
+
+        ))}
+
+      </div>
+
+  )}
+
+</div>
               </div>
             </div>
           ))}

@@ -1,40 +1,26 @@
+import traceback
+
 from fastapi import FastAPI, UploadFile, File, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from app.rag_service import ask_rag
+from app.pdf_processor import process_pdf
 
-from pypdf import PdfReader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from dotenv import load_dotenv
-
-import google.generativeai as genai
-import numpy as np
-import faiss
-import pickle
 import os
-import shutil
-
 # =========================
 # CONFIG
 # =========================
-
-load_dotenv()
-
-genai.configure(
-    api_key=os.getenv("GEMINI_API_KEY")
+from app.vector_store import (
+    save_documents,
+    load_documents,
+    build_index,
 )
-def get_embedding(text):
-    result = genai.embed_content(
-        model="models/text-embedding-004",
-        content=text
-    )
-
-    return result["embedding"]
-
+from app.config import (
+    UPLOAD_FOLDER,
+    DOCUMENTS_FILE,
+)
 app = FastAPI()
-
 chat_history = []
-
-UPLOAD_FOLDER = "uploaded_pdfs"
 
 os.makedirs(
     UPLOAD_FOLDER,
@@ -64,7 +50,6 @@ def home():
     return {
         "message": "Backend Running"
     }
-
 # =========================
 # UPLOAD PDF
 # =========================
@@ -74,122 +59,34 @@ async def upload_pdf(
     file: UploadFile = File(...)
 ):
     try:
-
-        # Save PDF file
-        pdf_path = os.path.join(
-            UPLOAD_FOLDER,
-            file.filename
-        )
-
-        with open(
-            pdf_path,
-            "wb"
-        ) as buffer:
-
-            shutil.copyfileobj(
-                file.file,
-                buffer
-            )
-
-        # Reset pointer
-        file.file.seek(0)
-
-        # Read PDF
-        reader = PdfReader(
-            file.file
-        )
-
-        text = ""
-
-        for page in reader.pages:
-
-            page_text = page.extract_text()
-
-            if page_text:
-                text += page_text + "\n"
-
-        # Split text
-        splitter = RecursiveCharacterTextSplitter(
-            chunk_size=500,
-            chunk_overlap=100
-        )
-
-        chunks = splitter.split_text(
-            text
-        )
-
-        # Create document objects
-        new_documents = []
-
-        for chunk in chunks:
-
-            new_documents.append({
-                "text": chunk,
-                "source": file.filename
-            })
+        new_documents = process_pdf(file)
 
         # Load existing documents
-        all_documents = []
+        all_documents = load_documents()
 
-        if os.path.exists("documents.pkl"):
-            with open("documents.pkl", "rb") as f:
-                all_documents = pickle.load(f)
-        all_documents.extend(
-            new_documents
-        )
-
-        # Save documents
-        with open(
-            "documents.pkl",
-            "wb"
-        ) as f:
-
-            pickle.dump(
-                all_documents,
-                f
-            )
-
-        # Create embeddings
-        all_texts = [
-            doc["text"]
+        # Remove old chunks of same PDF
+        all_documents = [
+            doc
             for doc in all_documents
+            if doc["source"] != file.filename
         ]
 
-        embeddings = [
-    get_embedding(text)
-    for text in all_texts
-]
+        # Add fresh chunks
+        all_documents.extend(new_documents)
 
-        embeddings = np.array(
-            embeddings,
-            dtype=np.float32
-        )
-
-        # Build FAISS
-        dimension = embeddings.shape[1]
-
-        index = faiss.IndexFlatL2(
-            dimension
-        )
-
-        index.add(
-            embeddings
-        )
-
-        faiss.write_index(
-            index,
-            "faiss_index.bin"
-        )
-
+        # Save documents
+        save_documents(all_documents)
+        build_index(all_documents)
         return {
             "success": True,
             "filename": file.filename,
-            "chunks_added": len(chunks),
+            "chunks_added": len(new_documents),
             "total_chunks": len(all_documents),
             "message": "PDF added successfully"
         }
 
     except Exception as e:
+        traceback.print_exc()
 
         return {
             "success": False,
@@ -214,13 +111,11 @@ async def delete_pdf(filename: str):
         os.remove(pdf_path)
 
         # Remove chunks from documents.pkl
-        if os.path.exists("documents.pkl"):
+        documents = []
 
-            with open(
-                "documents.pkl",
-                "rb"
-            ) as f:
-                documents = pickle.load(f)
+        if os.path.exists(DOCUMENTS_FILE):
+
+            documents = load_documents()
 
             documents = [
                 doc
@@ -228,45 +123,10 @@ async def delete_pdf(filename: str):
                 if doc["source"] != filename
             ]
 
-            with open(
-                "documents.pkl",
-                "wb"
-            ) as f:
-                pickle.dump(
-                    documents,
-                    f
-                )
+            save_documents(documents)
 
-        # Rebuild FAISS index
         if len(documents) > 0:
-
-            texts = [
-                doc["text"]
-                for doc in documents
-            ]
-
-            embeddings = [
-                get_embedding(text)
-                for text in texts
-            ]
-
-            embeddings = np.array(
-                embeddings,
-                dtype=np.float32
-            )
-
-            index = faiss.IndexFlatL2(
-                embeddings.shape[1]
-            )
-
-            index.add(
-                embeddings
-            )
-
-            faiss.write_index(
-                index,
-                "faiss_index.bin"
-            )
+            build_index(documents)
 
         return {
             "success": True,
@@ -274,6 +134,8 @@ async def delete_pdf(filename: str):
         }
 
     except Exception as e:
+
+        traceback.print_exc()
 
         return {
             "success": False,
@@ -287,19 +149,7 @@ async def delete_pdf(filename: str):
 @app.get("/documents")
 async def get_documents():
 
-    if not os.path.exists(
-        "documents.pkl"
-    ):
-        return {
-            "documents": []
-        }
-
-    with open(
-        "documents.pkl",
-        "rb"
-    ) as f:
-
-        documents = pickle.load(f)
+    documents = load_documents()
 
     filenames = list(
         set(
@@ -331,7 +181,7 @@ async def pdf_list():
 
             files.append({
                 "name": file,
-                "url": f"http://localhost:8000/pdfs/{file}"
+                "url": f"http://127.0.0.1:8000/pdfs/{file}"
             })
 
     return {
@@ -347,93 +197,31 @@ async def ask_question(
     data: dict = Body(...)
 ):
     try:
-
         question = data["question"]
-
-        pdf_name = data.get(
-    "pdf_name",
-    ""
-)
-
-        history_text = ""
-
-        for chat in chat_history:
-
-            history_text += (
-                f"User: {chat['question']}\n"
-                f"Assistant: {chat['answer']}\n\n"
-            )
-
-        with open("documents.pkl", "rb") as f:
-            documents = pickle.load(f)
-
-        index = faiss.read_index("faiss_index.bin")
-
-        question_embedding = np.array([get_embedding(question)], dtype=np.float32)
-
-        k = min(3, len(documents))
-        distances, indices = index.search(question_embedding, k=k)
-
-        retrieved_chunks = []
-        for idx in indices[0]:
-            if idx < len(documents):
-                retrieved_chunks.append(
-                    f"""
-Source: {documents[idx]['source']}
-
-Content:
-{documents[idx]['text']}
-"""
-                )
-
-        context = "\n\n".join(
-            retrieved_chunks
+        result = ask_rag(
+            question=question,
+            pdf_name=data.get("pdf_name", ""),
+            history=chat_history
         )
 
-        prompt = f"""
-You are a helpful PDF assistant.
-
-Use ONLY the document context below.
-
-If the answer is not present in the context,
-reply exactly:
-
-I could not find that information in the selected PDF.
-
-Do not use outside knowledge.
-
-Previous Conversation:
-{history_text}
-
-Document Context:
-{context}
-
-Question:
-{question}
-"""
-
-        model = genai.GenerativeModel(
-            "gemini-2.5-flash"
-        )
-
-        response = model.generate_content(
-            prompt
-        )
-
-        answer = response.text
+        if result is None:
+            return {
+                "success": False,
+                "error": "Selected PDF not found"
+            }
 
         chat_history.append({
-            "question": question,
-            "answer": answer
-        })
+    "question": question,
+    "answer": result["answer"]
+})
 
         return {
-            "success": True,
-            "answer": answer
-        }
+    "success": True,
+    "answer": result["answer"],
+    "sources": result["sources"]
+}
 
     except Exception as e:
-
         return {
             "success": False,
             "error": str(e)

@@ -82,7 +82,7 @@ await loadPDFs();
 setShowPdf(true);
 
 setSelectedPdf(
-  `http://localhost:8000/pdfs/${file.name}`
+  `http://127.0.0.1:8000/pdfs/${file.name}`
 );
 
 setSelectedPdfName(
@@ -165,15 +165,30 @@ if (!selectedPdfName) {
         }
       );
 
-      const aiMessage = {
-        role: "assistant",
-        content: response.data.answer,
-      };
+      if (response.data.success) {
 
-      setMessages((prev) => [
-        ...prev,
-        aiMessage,
-      ]);
+  const aiMessage = {
+  role: "assistant",
+  content: response.data.answer,
+  sources: response.data.sources || []
+};
+
+  setMessages((prev) => [
+    ...prev,
+    aiMessage,
+  ]);
+
+} else {
+
+  setMessages((prev) => [
+    ...prev,
+    {
+      role: "assistant",
+      content: "❌ " + response.data.error,
+    },
+  ]);
+
+}
 
     } catch (error) {
       console.error(error);
