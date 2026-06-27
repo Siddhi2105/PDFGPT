@@ -5,6 +5,7 @@ import {
   FaEye,
   FaEyeSlash
 } from "react-icons/fa";
+const API_URL = import.meta.env.VITE_API_URL;
 
 function App() {
   const [file, setFile] = useState(null);
@@ -39,26 +40,19 @@ useEffect(() => {
 }, []);
 
   const loadPDFs = async () => {
-    try {
-      const response = await axios.get(
-        "http://127.0.0.1:8000/pdf-list"
-      );
+  try {
+    const response = await axios.get(`${API_URL}/pdf-list`);
 
-      setPdfs(response.data.files);
+    setPdfs(response.data.files);
 
-      if (response.data.files.length > 0) {
-        setSelectedPdf(
-          response.data.files[0].url
-        );
-
-        setSelectedPdfName(
-          response.data.files[0].name
-        );
-      }
-    } catch (error) {
-      console.error(error);
+    if (response.data.files.length > 0) {
+      setSelectedPdf(response.data.files[0].url);
+      setSelectedPdfName(response.data.files[0].name);
     }
-  };
+  } catch (error) {
+    console.error(error);
+  }
+};
 
   const uploadPDF = async () => {
     if (!file) {
@@ -72,7 +66,7 @@ useEffect(() => {
       formData.append("file", file);
 
       const response = await axios.post(
-        "http://127.0.0.1:8000/upload",
+        `${API_URL}/upload`,
         formData
       );
 
@@ -82,7 +76,7 @@ await loadPDFs();
 setShowPdf(true);
 
 setSelectedPdf(
-  `http://127.0.0.1:8000/pdfs/${file.name}`
+  `${API_URL}/pdfs/${file.name}`
 );
 
 setSelectedPdfName(
@@ -104,8 +98,8 @@ setSelectedPdfName(
   try {
 
     await axios.delete(
-      `http://127.0.0.1:8000/delete-pdf/${pdfName}`
-    );
+  `${API_URL}/delete-pdf/${pdfName}`
+);
 
     if (selectedPdfName === pdfName) {
       setSelectedPdf("");
@@ -126,8 +120,8 @@ setSelectedPdfName(
   const clearChat = async () => {
     try {
       await axios.post(
-        "http://127.0.0.1:8000/clear-chat"
-      );
+  `${API_URL}/clear-chat`
+);
 
       setMessages([]);
 
@@ -158,7 +152,7 @@ if (!selectedPdfName) {
 
     try {
       const response = await axios.post(
-        "http://127.0.0.1:8000/ask",
+        `${API_URL}/ask`,
         {
           question,
           pdf_name: selectedPdfName,
