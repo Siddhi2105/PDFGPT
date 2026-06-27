@@ -1,5 +1,9 @@
-import google.generativeai as genai
+import google.genai as genai
+import os
 
+client = genai.Client(
+    api_key=os.getenv("GEMINI_API_KEY")
+)
 
 def generate_answer(context, question, history_text):
 
@@ -28,8 +32,9 @@ Question:
 {question}
 """
 
-    model = genai.GenerativeModel("gemini-2.5-flash")
-
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(
+        model="gemini-3.1-flash-image",
+        contents=prompt
+    )
 
     return response.text

@@ -1,7 +1,3 @@
-import numpy as np
-import faiss
-import google.generativeai as genai
-
 from .vector_store import load_documents
 from .llm_service import generate_answer
 from .retriever import retrieve_context

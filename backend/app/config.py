@@ -1,29 +1,14 @@
 import os
 from dotenv import load_dotenv
-import google.generativeai as genai
+import google.genai as genai
 
 load_dotenv()
 
-genai.configure(
-    api_key=os.getenv("GEMINI_API_KEY")
+# Configure Gemini
+client = genai.Client(
+    api_key=os.getenv("GEMINI_API_KEY"),
+    http_options={"api_version": "v1"}
 )
-
-def get_embedding(text):
-    response = genai.embed_content(
-        model="models/text-embedding-004",
-        content=text,
-        task_type="retrieval_document"
-    )
-    return response["embedding"]
-
-
-def get_query_embedding(text):
-    response = genai.embed_content(
-        model="models/text-embedding-004",
-        content=text,
-        task_type="retrieval_query"
-    )
-    return response["embedding"]
 
 UPLOAD_FOLDER = "uploaded_pdfs"
 
@@ -32,3 +17,19 @@ DOCUMENTS_FILE = "documents.pkl"
 INDEX_FILE = "faiss_index.bin"
 
 VECTOR_DB = "vector_db"
+
+
+def get_embedding(text: str):
+    result = client.models.embed_content(
+        model="gemini-embedding-001",
+        contents=text,
+    )
+    return result.embeddings[0].values
+
+
+def get_query_embedding(text: str):
+    result = client.models.embed_content(
+        model="gemini-embedding-001",
+        contents=text,
+    )
+    return result.embeddings[0].values
