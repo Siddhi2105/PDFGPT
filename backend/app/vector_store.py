@@ -4,7 +4,8 @@ import faiss
 import numpy as np
 
 from .config import (
-    embedding_model,
+    get_embedding,
+    get_query_embedding,
     DOCUMENTS_FILE,
     INDEX_FILE,
 )
@@ -29,10 +30,10 @@ def build_index(documents):
 
     texts = [doc["text"] for doc in documents]
 
-    embeddings = embedding_model.encode(
-        texts,
-        convert_to_numpy=True
-    ).astype(np.float32)
+    embeddings = np.array(
+        [get_embedding(text) for text in texts],
+        dtype=np.float32
+    )
 
     index = faiss.IndexFlatL2(
         embeddings.shape[1]
@@ -44,6 +45,7 @@ def build_index(documents):
         index,
         INDEX_FILE
     )
+
 
 def load_index():
 
@@ -62,10 +64,10 @@ def search_index(question, k=3):
     if index is None:
         return None, None
 
-    query_embedding = embedding_model.encode(
-        [question],
-        convert_to_numpy=True
-    ).astype(np.float32)
+    query_embedding = np.array(
+        [get_query_embedding(question)],
+        dtype=np.float32
+    )
 
     distances, indices = index.search(query_embedding, k)
 

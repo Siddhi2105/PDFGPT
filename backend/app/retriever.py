@@ -9,7 +9,7 @@ def retrieve_context(documents, question, pdf_name=""):
         k=min(20, len(documents)) if documents else 0,
     )
 
-    if not indices:
+    if indices is None:
         return "", []
 
     retrieved_chunks = []

@@ -1,19 +1,14 @@
 import os
 from dotenv import load_dotenv
-from sentence_transformers import SentenceTransformer
-import google.generativeai as genai
+import google.genai as genai
 
 # Load environment variables
 load_dotenv()
 
 # Configure Gemini
-genai.configure(
-    api_key=os.getenv("GEMINI_API_KEY")
-)
-
-# Embedding model
-embedding_model = SentenceTransformer(
-    "all-MiniLM-L6-v2"
+client = genai.Client(
+    api_key=os.getenv("GEMINI_API_KEY"),
+    http_options={"api_version": "v1"}
 )
 
 # Upload folder
@@ -23,3 +18,18 @@ UPLOAD_FOLDER = "uploaded_pdfs"
 DOCUMENTS_FILE = "documents.pkl"
 INDEX_FILE = "faiss_index.bin"
 VECTOR_DB = "vector_db"
+
+# Gemini Embeddings
+def get_embedding(text: str):
+    result = client.models.embed_content(
+        model="gemini-embedding-001",
+        contents=text,
+    )
+    return result.embeddings[0].values
+
+def get_query_embedding(text: str):
+    result = client.models.embed_content(
+        model="gemini-embedding-001",
+        contents=text,
+    )
+    return result.embeddings[0].values
