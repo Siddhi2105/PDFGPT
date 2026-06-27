@@ -1,6 +1,6 @@
 # DocMind
 
-> AI-powered PDF Chatbot built using **Retrieval-Augmented Generation (RAG)**, **FastAPI**, **React**, **FAISS**, and **Google Gemini**.
+> AI-powered PDF chatbot built using **Retrieval-Augmented Generation (RAG)**, **FastAPI**, **React**, **FAISS**, and **Google Gemini**.
 
 ![Python](https://img.shields.io/badge/Python-3.11+-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-Backend-green)
@@ -13,25 +13,25 @@
 
 ## Overview
 
-DocMind is an AI-powered document assistant that enables users to upload PDF documents and interact with them using natural language.
+DocMind is an AI-powered document assistant that enables users to upload PDF files and interact with them using natural language.
 
-The application leverages **Retrieval-Augmented Generation (RAG)** to retrieve semantically relevant document chunks using **FAISS** and generate context-aware responses using **Google Gemini**.
+The application uses **Retrieval-Augmented Generation (RAG)** to retrieve semantically relevant document chunks using **FAISS** and generates context-aware responses using **Google Gemini**, allowing users to explore documents conversationally.
 
 ---
 
 ## Features
 
-- Upload and manage multiple PDF documents
-- Natural language question answering
-- Retrieval-Augmented Generation (RAG)
-- Semantic search with FAISS
-- Automatic PDF text chunking
-- Integrated PDF viewer
-- Persistent vector storage
-- Conversation history
-- REST API built with FastAPI
-- Modern React-based user interface
-- Deployable on Render and Vercel
+* Upload and manage multiple PDF documents
+* Natural language question answering
+* Retrieval-Augmented Generation (RAG)
+* Semantic search using FAISS
+* Automatic document chunking
+* Integrated PDF viewer
+* Persistent vector storage
+* Chat history support
+* REST API powered by FastAPI
+* Modern React-based user interface
+* Cloud deployment with Render and Vercel
 
 ---
 
@@ -74,27 +74,15 @@ The application leverages **Retrieval-Augmented Generation (RAG)** to retrieve s
 
 ## Technology Stack
 
-### Frontend
-
-- React
-- Vite
-- Axios
-- CSS
-
-### Backend
-
-- FastAPI
-- Python
-- Google Gemini API
-- FAISS
-- NumPy
-- PyPDF
-- LangChain Text Splitters
-
-### Deployment
-
-- Render
-- Vercel
+| Category            | Technologies             |
+| ------------------- | ------------------------ |
+| **Frontend**        | React, Vite, Axios       |
+| **Backend**         | FastAPI                  |
+| **Vector Database** | FAISS                    |
+| **AI Models**       | Google Gemini            |
+| **PDF Processing**  | PyPDF                    |
+| **Text Processing** | LangChain Text Splitters |
+| **Deployment**      | Render, Vercel           |
 
 ---
 
@@ -131,28 +119,23 @@ DocMind
 
 ### 1. Document Processing
 
-Uploaded PDF files are processed using **PyPDF**, and the extracted text is divided into semantic chunks using LangChain's Recursive Character Text Splitter.
+Uploaded PDF files are parsed using PyPDF, and the extracted text is divided into semantic chunks.
 
 ### 2. Embedding Generation
 
-Each document chunk is converted into vector embeddings using Google's **Gemini Embedding Model**.
+Each document chunk is converted into vector embeddings using Google's Gemini Embedding Model.
 
-### 3. Vector Indexing
+### 3. Vector Storage
 
-The generated embeddings are stored in a **FAISS** vector database for efficient similarity search.
+Embeddings are stored inside a FAISS vector database for efficient semantic retrieval.
 
-### 4. Retrieval
+### 4. Context Retrieval
 
-For every user query:
-
-- Generate query embeddings
-- Search FAISS for the most relevant document chunks
-- Retrieve contextual information
-- Pass the retrieved context to Gemini
+When a question is asked, the query is embedded and compared against the stored vectors to retrieve the most relevant document chunks.
 
 ### 5. Response Generation
 
-Gemini generates a concise response using only the retrieved document context, ensuring answers remain grounded in the uploaded PDFs.
+The retrieved context is combined with the user's question and passed to Gemini to generate an answer grounded in the uploaded document.
 
 ---
 
@@ -171,7 +154,7 @@ FAISS Similarity Search
 Retrieve Relevant Chunks
       │
       ▼
-Construct Prompt
+Prompt Construction
       │
       ▼
 Gemini LLM
@@ -184,14 +167,14 @@ Final Answer
 
 ## API Endpoints
 
-| Method | Endpoint | Description |
-|----------|-------------------------|--------------------------|
-| GET | `/` | Health Check |
-| POST | `/upload` | Upload a PDF |
-| GET | `/pdf-list` | List uploaded PDFs |
-| DELETE | `/delete-pdf/{filename}` | Delete a PDF |
-| POST | `/ask` | Ask questions |
-| POST | `/clear-chat` | Clear chat history |
+| Method | Endpoint                 | Description        |
+| ------ | ------------------------ | ------------------ |
+| GET    | `/`                      | Health Check       |
+| POST   | `/upload`                | Upload PDF         |
+| GET    | `/pdf-list`              | List Uploaded PDFs |
+| DELETE | `/delete-pdf/{filename}` | Delete PDF         |
+| POST   | `/ask`                   | Ask Questions      |
+| POST   | `/clear-chat`            | Clear Chat History |
 
 ---
 
@@ -212,12 +195,6 @@ cd backend
 
 python -m venv .venv
 
-# Windows
-.venv\Scripts\activate
-
-# Linux/macOS
-source .venv/bin/activate
-
 pip install -r requirements.txt
 
 uvicorn main:app --reload
@@ -235,32 +212,22 @@ npm run dev
 
 ---
 
-## Environment Variables
+## Configuration
 
-### Backend (`backend/.env`)
-
-```env
-GEMINI_API_KEY=YOUR_GEMINI_API_KEY
-```
-
-### Frontend (`frontend/.env`)
-
-```env
-VITE_API_URL=https://your-backend.onrender.com
-```
+Before running the application, create the required environment variable files for both the backend and frontend and configure them with your own credentials and API keys.
 
 ---
 
 ## Future Improvements
 
-- User authentication
-- OCR support for scanned documents
-- Streaming AI responses
-- Source highlighting within PDFs
-- Hybrid Search (BM25 + Vector Search)
-- Conversation memory
-- Database integration
-- Multi-agent RAG architecture
+* User authentication
+* OCR support for scanned PDFs
+* Streaming AI responses
+* Source highlighting within PDFs
+* Hybrid Search (BM25 + Vector Search)
+* Conversation memory
+* Database integration
+* Multi-agent RAG architecture
 
 ---
 
